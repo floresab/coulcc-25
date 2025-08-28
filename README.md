@@ -56,3 +56,11 @@
   description of complex algorithm    JCP XX (1985) YYY-ZZZ
 
   this version written up       in    CPC XX (1985) YYY-ZZZ
+
+# Building and testing
+## fpm
+### GCC (`gfortran`)
+```
+fpm test --compiler gfortran --profile release --flag "-cpp"
+```
+## cmake

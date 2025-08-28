@@ -63,7 +63,7 @@ set -u # error on use of undefined variable
 
 case $MACHINE in
   gnu)
-  CMK_FC=${CMK_FC:-"gfortran-15.1"}
+  CMK_FC=${CMK_FC:-"gfortran"}
   #CMK_FC=${CMK_FC:-"gfortran"}
   CMK_FLAG="-Wall -cpp -O3 -std=f2023 -ffree-line-length-512 -fbacktrace -fcheck=all -pedantic"
   ;;
