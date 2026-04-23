@@ -1,0 +1,71 @@
+#!/bin/python3
+#-----------------------------------------------------------------------
+import argparse
+import os
+import sys
+import subprocess
+#-----------------------------------------------------------------------
+if __name__ == "__main__":
+#-----------------------------------------------------------------------
+    dir_ = os.path.dirname(os.path.abspath(__file__))
+    default_dir= os.path.join(dir_, "build")
+#-----------------------------------------------------------------------
+    parser = argparse.ArgumentParser(description="Install Script")
+    parser.add_argument("-b", "--build_dir", default=default_dir, help="Install binary in 'PREFIX/bin'")
+    parser.add_argument("-m", "--machine", default="gnu", help="Sets compiler and flags (gnu -- default , intel (ifx) or cray)")
+    parser.add_argument("-e", "--extra_flags", help="extra flags to send to the compiler")
+    parser.add_argument("-n", "--nproc",default="8", help="number of processes make can spawn")
+    parser.add_argument("-g", "--debug", action="store_true", help="Compile with -g")
+#-----------------------------------------------------------------------
+    args = parser.parse_args()
+#-----------------------------------------------------------------------
+    machine = args.machine
+#-----------------------------------------------------------------------
+    FC = os.environ.get("FC") # Default compiler is often mpif90 or ftn
+#-----------------------------------------------------------------------
+# flags for different machines
+#-----------------------------------------------------------------------
+    if machine == "gnu":
+        FC = FC or "gfortran"
+        if args.debug:
+            FFLAGS = f"-g -O0 -Wall -Wextra -cpp -std=f2023 -ffree-line-length-512 -fbacktrace -fcheck=all -pedantic"
+        else:
+            FFLAGS = f"-Wall -cpp -O3 -std=f2023 -ffree-line-length-512"
+#-----------------------------------------------------------------------
+    elif machine == "cray":
+        FC = FC or "ftn"
+        if args.debug:
+            FFLAGS = f"-g -O0 -e Z"
+        else:
+            FFLAGS = f"-O3 -e Z"
+#-----------------------------------------------------------------------
+    elif machine == "intel":
+        FC = FC or "ifx"
+        if args.debug:
+            FFLAGS = f"-g -O0 -diag-enable=all -warn -cpp -traceback"
+        else:
+            FFLAGS = f"-warn -cpp -O3"
+#-----------------------------------------------------------------------
+    else:
+        print(f"ERROR: unknown machine \"{machine}\"")
+        sys.exit(1)
+#-----------------------------------------------------------------------
+    if args.extra_flags is not None:
+        FFLAGS += f" {args.extra_flags}" #add space
+#-----------------------------------------------------------------------
+# Build with CMake
+    cmake_cmd = [
+        "cmake", "-S", ".", "-B", args.build_dir,
+        f"-DCMAKE_Fortran_COMPILER={FC}",
+        f"-DCMAKE_Fortran_FLAGS={FFLAGS}",
+        f"-DCOULCC_MASTER_PROJECT=ON"\
+    ]
+    build_cmd=["make","-C",args.build_dir]
+#-----------------------------------------------------------------------
+    try:
+        subprocess.run(cmake_cmd, check=True)
+        subprocess.run(build_cmd, check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"CMake failed with error: {e}")
+        sys.exit(1)
+#-----------------------------------------------------------------------
